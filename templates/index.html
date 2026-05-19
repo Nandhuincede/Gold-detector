@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gold Ornament Detector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f7f3ee;
+      color: #2d2d2d;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: #1a1a2e;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      color: #f0c040;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .health-badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #2d2d4e;
+      color: #aaa;
+    }
+
+    /* Main layout */
+    main {
+      max-width: 860px;
+      margin: 36px auto;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Card */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid #e8e0d6;
+    }
+
+    .card h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 16px;
+    }
+
+    /* Drop zone */
+    #drop-zone {
+      border: 2px dashed #d4c5b0;
+      border-radius: 10px;
+      padding: 44px 20px;
+      text-align: center;
+      cursor: pointer;
+      background: #faf7f3;
+      transition: all 0.2s;
+      color: #888;
+      font-size: 14px;
+    }
+
+    #drop-zone .icon { font-size: 32px; margin-bottom: 10px; }
+    #drop-zone p { font-size: 12px; color: #bbb; margin-top: 5px; }
+
+    #drop-zone:hover, #drop-zone.drag-over {
+      border-color: #f0c040;
+      background: #fffbf0;
+      color: #b8900a;
+    }
+
+    /* Preview */
+    #preview-container { display: none; margin-top: 16px; text-align: center; }
+    #preview-image {
+      max-height: 200px;
+      max-width: 100%;
+      border-radius: 8px;
+      border: 1px solid #e0d8cc;
+    }
+    #preview-name { font-size: 12px; color: #999; margin-top: 8px; }
+
+    /* Analyze button */
+    #analyze-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 13px;
+      background: #f0c040;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    #analyze-btn:hover:not(:disabled) {
+      background: #e0b030;
+      transform: translateY(-1px);
+    }
+
+    #analyze-btn:disabled { background: #e0d5be; color: #999; cursor: not-allowed; }
+
+    /* Alert */
+    .alert {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .alert-success { background: #f0faf4; border: 1px solid #b6dfc6; color: #276843; }
+    .alert-error   { background: #fdf2f2; border: 1px solid #f0bbbb; color: #b03030; }
+
+    /* Detail section */
+    #detail-section { display: none; }
+
+    .result-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .result-header h2 { margin: 0; }
+
+    .result-header .filename {
+      font-size: 12px;
+      color: #999;
+      font-weight: 400;
+      max-width: 400px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Summary pills */
+    .pills {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill.yellow { background: #fff8dc; border: 1px solid #f0d060; color: #7a5c00; }
+    .pill.teal   { background: #e8f7f5; border: 1px solid #80ccc4; color: #1a6b63; }
+
+    .pill strong { font-size: 18px; font-weight: 700; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+    thead tr { background: #f7f3ee; }
+
+    thead th {
+      padding: 9px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      border-bottom: 1px solid #ede5d8;
+    }
+
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f3ede6;
+      color: #444;
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fdfaf6; }
+
+    .empty-row td {
+      text-align: center;
+      color: #ccc;
+      padding: 28px;
+      font-size: 13px;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #fff3cd;
+      color: #7a5c00;
+      border: 1px solid #f0d878;
+      text-transform: capitalize;
+    }
+
+    .qty-cell {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    /* Notes */
+    #analysis-notes {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: #fffbf0;
+      border-left: 3px solid #f0c040;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: #7a6020;
+      line-height: 1.6;
+    }
+
+    /* History header */
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-header h2 { margin: 0; }
+
+    .refresh-btn {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #888;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .refresh-btn:hover { background: #f5f0e8; border-color: #ccc; color: #555; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🪙 Gold Ornament Detector</h1>
+  <span class="health-badge" id="health-indicator">Checking…</span>
+</header>
+
+<main>
+
+  <!-- Upload -->
+  <div class="card">
+    <h2>Upload Image</h2>
+    <div id="drop-zone"
+         onclick="document.getElementById('file-input').click()"
+         ondragover="handleDragOver(event)"
+         ondragleave="handleDragLeave(event)"
+         ondrop="handleDrop(event)">
+      <div class="icon">📷</div>
+      Click to choose a photo, or drag it here
+      <p>JPEG · PNG · WebP &nbsp;·&nbsp; max 20 MB</p>
+    </div>
+    <input type="file" id="file-input" accept="image/jpeg,image/jpg,image/png,image/webp"
+           style="display:none" onchange="handleFileSelect(event)" />
+
+    <div id="preview-container">
+      <img id="preview-image" src="" alt="Preview" />
+      <div id="preview-name"></div>
+    </div>
+
+    <button id="analyze-btn" onclick="analyzeImage()" disabled>Analyze Ornaments</button>
+    <div id="alert-area"></div>
+  </div>
+
+  <!-- Results for this image -->
+  <div class="card" id="detail-section">
+    <div class="result-header">
+      <h2>Detection Results</h2>
+      <span class="filename" id="detail-filename"></span>
+    </div>
+
+    <div class="pills">
+      <div class="pill yellow">
+        <strong id="detail-total-items">0</strong> Total Items
+      </div>
+      <div class="pill teal">
+        <strong id="detail-total-types">0</strong> Types Found
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Filename</th>
+          <th>Item Type</th>
+          <th>Qty</th>
+          <th>Confidence</th>
+          <th>Detected At</th>
+        </tr>
+      </thead>
+      <tbody id="detail-body"></tbody>
+    </table>
+
+    <div id="analysis-notes"></div>
+  </div>
+
+  <!-- History -->
+  <div class="card">
+    <div class="card-header">
+      <h2>History</h2>
+      <button class="refresh-btn" onclick="loadHistory()">↻ Refresh</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Filename</th>
+          <th>Item Type</th>
+          <th>Qty</th>
+          <th>Confidence</th>
+          <th>Detected At</th>
+        </tr>
+      </thead>
+      <tbody id="history-body">
+        <tr class="empty-row"><td colspan="6">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<script>
+  let selectedFile = null;
+
+  async function checkHealth() {
+    try {
+      const data = await fetch('/health').then(r => r.json());
+      const el = document.getElementById('health-indicator');
+      if (data.status === 'ok' && data.groq_key_set) {
+        el.textContent = '● Ready'; el.style.color = '#50c878';
+      } else if (data.status === 'ok') {
+        el.textContent = '● No API Key'; el.style.color = '#f0c040';
+      } else {
+        el.textContent = '● Offline'; el.style.color = '#e05050';
+      }
+    } catch {
+      const el = document.getElementById('health-indicator');
+      el.textContent = '● Offline'; el.style.color = '#e05050';
+    }
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.add('drag-over');
+  }
+  function handleDragLeave() {
+    document.getElementById('drop-zone').classList.remove('drag-over');
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+  }
+  function handleFileSelect(e) {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  }
+
+  function setFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('preview-image').src = e.target.result;
+      document.getElementById('preview-name').textContent =
+        file.name + '  ·  ' + formatBytes(file.size);
+      document.getElementById('preview-container').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+    document.getElementById('analyze-btn').disabled = false;
+    document.getElementById('alert-area').innerHTML = '';
+  }
+
+  function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  async function analyzeImage() {
+    if (!selectedFile) return;
+    document.getElementById('alert-area').innerHTML = '';
+    const btn = document.getElementById('analyze-btn');
+    btn.disabled = true;
+    btn.textContent = 'Analyzing…';
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await fetch('/analyze', { method: 'POST', body: formData });
+      let data;
+      const raw = await res.text();
+      try { data = JSON.parse(raw); }
+      catch { showAlert('error', 'Server error: ' + raw.slice(0, 200)); return; }
+
+      if (!res.ok) { showAlert('error', data.detail || 'Analysis failed.'); return; }
+
+      renderDetailTable(data);
+      loadHistory();
+      showAlert('success', `Done! Found ${data.total_items} ornament(s) across ${data.total_types} type(s).`);
+    } catch (err) {
+      showAlert('error', 'Network error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Analyze Ornaments';
+    }
+  }
+
+  function renderDetailTable(data) {
+    document.getElementById('detail-section').style.display = 'block';
+    document.getElementById('detail-filename').textContent    = data.filename;
+    document.getElementById('detail-total-items').textContent = data.total_items ?? 0;
+    document.getElementById('detail-total-types').textContent = data.total_types ?? 0;
+
+    const tbody = document.getElementById('detail-body');
+    tbody.innerHTML = '';
+
+    if (!data.items || data.items.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No ornaments detected</td></tr>';
+    } else {
+      const now = new Date().toLocaleString();
+      data.items.forEach((item, i) => {
+        const conf = item.confidence != null ? Math.round(item.confidence * 100) + '%' : '—';
+        const id   = data.db_record_ids?.[i] ?? (i + 1);
+        const tr   = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color:#bbb;">${id}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#888;" title="${data.filename}">${data.filename}</td>
+          <td><span class="badge">${item.item_type}</span></td>
+          <td class="qty-cell">${item.quantity}</td>
+          <td style="color:#888;">${conf}</td>
+          <td style="color:#aaa;">${now}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    const notesEl = document.getElementById('analysis-notes');
+    if (data.analysis_notes) {
+      notesEl.textContent = data.analysis_notes;
+      notesEl.style.display = 'block';
+    } else {
+      notesEl.style.display = 'none';
+    }
+
+    document.getElementById('detail-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function loadHistory() {
+    try {
+      const data  = await fetch('/history?limit=50').then(r => r.json());
+      const tbody = document.getElementById('history-body');
+      tbody.innerHTML = '';
+
+      if (!data.records || data.records.length === 0) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No history yet</td></tr>';
+        return;
+      }
+
+      data.records.forEach(rec => {
+        const conf = rec.confidence != null ? Math.round(rec.confidence * 100) + '%' : '—';
+        const date = new Date(rec.created_at + 'Z').toLocaleString();
+        const tr   = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color:#bbb;">${rec.id}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#888;" title="${rec.filename}">${rec.filename}</td>
+          <td><span class="badge">${rec.item_type}</span></td>
+          <td class="qty-cell">${rec.quantity}</td>
+          <td style="color:#888;">${conf}</td>
+          <td style="color:#aaa;">${date}</td>`;
+        tbody.appendChild(tr);
+      });
+    } catch {
+      document.getElementById('history-body').innerHTML =
+        '<tr class="empty-row"><td colspan="6">Failed to load history</td></tr>';
+    }
+  }
+
+  function showAlert(type, msg) {
+    document.getElementById('alert-area').innerHTML =
+      `<div class="alert alert-${type}">${msg}</div>`;
+  }
+
+  checkHealth();
+  loadHistory();
+</script>
+</body>
+</html>
