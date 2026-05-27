@@ -100,10 +100,13 @@ async def analyze_image(file: UploadFile = File(...)):
     try:
         logger.info(f" Running detection pipeline for: {file.filename}")
         result_dict: dict = ornament_graph.invoke(initial_state)
-        final_state = Agent_State(**{
-            k: v for k, v in result_dict.items()
-            if k in Agent_State.model_fields
-        })
+        allowed_fields = Agent_State.__annotations__.keys()
+
+        final_state: Agent_State = {
+            k: v
+            for k, v in result_dict.items()
+            if k in allowed_fields
+        }
     except Exception as e:
         logger.error(f"Pipeline failed: {traceback.format_exc()}")
         return JSONResponse(status_code=500, content={"detail": f"{type(e).__name__}: {e}"})
