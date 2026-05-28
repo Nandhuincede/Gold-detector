@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, TypedDict
 from datetime import datetime
 
 class Ornament_Item(BaseModel):
@@ -51,7 +51,7 @@ class Detection_Result(BaseModel):
 
 
 
-class Agent_State(BaseModel):
+class Agent_State(TypedDict):
     """State object passed between LangGraph nodes."""
     # Input fields
     filename: str = Field(
