@@ -74,7 +74,7 @@ def build_graph() -> StateGraph:
     workflow.add_edge(NODE_SAVE_TO_DB, END)
 
     
-    workflow.compile()
+    
     logger.info("[graph] LangGraph workflow compiled successfully.")
     return workflow.compile()
 
